@@ -1,0 +1,22 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+
+# Secrets (These will be handled by GitHub Secrets instead)
+.env
+token.json
+client_secrets.json
+
+# Build and Output
+output/
+*.mp3
+*.mp4
+*.png
+*.jpg
+final_test_output.txt
+test_veo_output.txt
+test_imagen_output.txt
+
+# OS
+.DS_Store

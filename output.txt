@@ -1,0 +1,26 @@
+{
+  "title": "Your Next Burger Is Being Made By A Robot",
+  "description": "The fast food industry is changing forever. Is your job safe? #AI #FutureOfWork #Automation",
+  "scenes": [
+    {
+      "narration": "The person taking your order at the drive-thru? They aren't human anymore.",
+      "search_term": "Cinematic close up of a futuristic robot wearing a fast food headset, neon drive-thru lights, 4k, realistic"
+    },
+    {
+      "narration": "Major chains are quietly swapping staff for AI that never gets tired, never complains, and gets your order right every single time.",
+      "search_term": "High-speed robotic arm flipping burgers on a professional grill, steam rising, cinematic lighting, 8k"
+    },
+    {
+      "narration": "From automated fryers to AI voice assistants, the 'fast' in fast food just got a whole lot faster\u2014and a lot lonelier.",
+      "search_term": "Hyper-realistic automated fast food kitchen with no humans, glowing blue interfaces, sleek metal surfaces"
+    },
+    {
+      "narration": "Experts predict millions of service jobs will vanish by 2030. We\u2019re witnessing the end of the entry-level job as we know it.",
+      "search_term": "Dramatic timelapse of a busy futuristic city street with digital code and data streams flying past people"
+    },
+    {
+      "narration": "Would you prefer a robot cook or a human touch? Subscribe for the truth about AI and comment: is this a dream or a nightmare?",
+      "search_term": "Close up of a realistic humanoid robot face looking directly into the camera, soft cinematic background blur"
+    }
+  ]
+}
