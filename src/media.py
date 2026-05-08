@@ -116,5 +116,54 @@ def fetch_background_music(output_path: str) -> bool:
         print(f"     [Music] Failed to fetch music: {e}")
         return False
 
+def generate_veo_video(prompt: str, output_path: str) -> bool:
+    """
+    Generates a high-quality video clip using Google's Veo model (veo-3.1-generate-preview).
+    """
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        print("     [Veo] Error: GOOGLE_API_KEY not found in environment.")
+        return False
+
+    try:
+        from google import genai
+        from google.genai import types
+        
+        print(f"     [Veo] Initializing client...")
+        client = genai.Client(api_key=api_key)
+        
+        print(f"     [Veo] Requesting 6s preview video for: '{prompt[:45]}...'")
+        operation = client.models.generate_videos(
+            model="veo-3.1-generate-preview",
+            prompt=prompt,
+            config=types.GenerateVideosConfig(
+                aspect_ratio="9:16",
+                duration_seconds=6
+            )
+        )
+        
+        print("     [Veo] Processing on Google Cloud. This usually takes 60-90 seconds...")
+        while not operation.done:
+            print("     [Veo] Still generating...")
+            time.sleep(10)
+            
+        if operation.result and operation.result.generated_videos:
+            video_file = operation.result.generated_videos[0]
+            print(f"     [Veo] Generation complete. Downloading: {video_file.file_name}")
+            video_bytes = client.files.download(file_name=video_file.file_name)
+            
+            with open(output_path, "wb") as f:
+                f.write(video_bytes)
+            print(f"     [Veo] Video saved to {output_path} successfully!")
+            return True
+        else:
+            print(f"     [Veo] Failed: No video returned from the Veo operation.")
+            return False
+            
+    except Exception as e:
+        print(f"     [Veo] Error generating video: {e}")
+        return False
+
 if __name__ == "__main__":
     generate_audio("Test", "test.mp3")
+

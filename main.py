@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from src.trends import get_trending_topic
 from src.script_writer import generate_video_script
-from src.media import generate_audio, fetch_pexels_video, generate_flux_image, fetch_background_music
+from src.media import generate_audio, fetch_pexels_video, generate_flux_image, fetch_background_music, generate_veo_video
 from src.video_editor import assemble_video
 from src.youtube_uploader import upload_video
 
@@ -49,6 +49,7 @@ def main():
     print("\n[Step 3] Gathering Media Assets (Flux -> Pexels)...")
     asset_paths = []
     audio_paths = []
+    narrations = []
     
     for idx, scene in enumerate(scenes):
         narration = scene.get('narration')
@@ -59,28 +60,39 @@ def main():
         audio_path = os.path.join(output_dir, f"scene_{idx}_audio.mp3")
         a_success = generate_audio(narration, audio_path)
         
-        # Asset Selection (Flux -> Pexels)
+        # Asset Selection (Veo -> Flux -> Pexels)
         asset_path = None
         success = False
         
-        # 1. Try Flux (High Quality Image)
-        temp_path = os.path.join(output_dir, f"scene_{idx}_flux.jpg")
-        if generate_flux_image(prompt, temp_path):
-            asset_path = temp_path
-            success = True
-            print(f"     [Success] Flux Cinematic Image generated.")
+        # 1. Try Google Veo (Premium AI Video Model)
+        if os.getenv("USE_VEO", "False").lower() == "true":
+            temp_path = os.path.join(output_dir, f"scene_{idx}_veo.mp4")
+            if generate_veo_video(prompt, temp_path):
+                asset_path = temp_path
+                success = True
+                print(f"     [Success] Google Veo Premium Video generated.")
         
-        # 2. Try Pexels (Stock Video Fallback)
+        # 2. Try Flux (High Quality Cinematic Image Fallback)
+        if not success:
+            temp_path = os.path.join(output_dir, f"scene_{idx}_flux.jpg")
+            if generate_flux_image(prompt, temp_path):
+                asset_path = temp_path
+                success = True
+                print(f"     [Success] Flux Cinematic Image generated.")
+        
+        # 3. Try Pexels (Stock Video Fallback)
         if not success:
             temp_path = os.path.join(output_dir, f"scene_{idx}_pexels.mp4")
             if fetch_pexels_video(prompt, temp_path):
                 asset_path = temp_path
                 success = True
                 print(f"     [Success] Pexels Stock Video fetched.")
+
         
         if a_success and success:
              asset_paths.append(asset_path)
              audio_paths.append(audio_path)
+             narrations.append(narration)
         else:
              print(f"     [Failed] Could not acquire assets for Scene {idx+1}. Skipping.")
     
@@ -96,7 +108,7 @@ def main():
         print("Error: No assets downloaded. Workflow failed.")
         return
         
-    v_success = assemble_video(asset_paths, audio_paths, final_output_path, music_path)
+    v_success = assemble_video(asset_paths, audio_paths, final_output_path, music_path, narrations=narrations)
     if not v_success:
         print("Error during video assembly.")
         return

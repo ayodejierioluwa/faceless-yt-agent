@@ -1,5 +1,8 @@
 import os
 import PIL.Image
+import PIL.ImageDraw
+import PIL.ImageFont
+import numpy as np
 
 # Monkey-patch PIL for Compatibility with MoviePy 1.0.3 and newer Pillow (10+)
 if not hasattr(PIL.Image, 'ANTIALIAS'):
@@ -7,6 +10,91 @@ if not hasattr(PIL.Image, 'ANTIALIAS'):
 
 from moviepy.editor import VideoFileClip, AudioFileClip, ImageClip, concatenate_videoclips, CompositeAudioClip
 from moviepy.audio.fx.all import volumex
+
+def draw_subtitle_on_frame(frame_np, text, font_size=55):
+    """
+    Renders styled bold subtitles directly onto a numpy image frame using Pillow.
+    Uses high-visibility yellow text with a heavy black outline.
+    """
+    image = PIL.Image.fromarray(frame_np)
+    draw = PIL.ImageDraw.Draw(image)
+    
+    # Try to load a nice thick modern sans-serif font
+    font = None
+    font_paths = [
+        "/System/Library/Fonts/HelveticaNeue.ttc",  # macOS standard
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",  # macOS Arial Bold
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Linux
+        "arial.ttf"  # general fallback
+    ]
+    
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                font = PIL.ImageFont.truetype(path, font_size)
+                break
+            except:
+                pass
+                
+    if font is None:
+        font = PIL.ImageFont.load_default()
+        
+    w, h = image.size
+    
+    # Get text boundaries for center alignment (Pillow 10+ compatible)
+    try:
+        bbox = draw.textbbox((0, 0), text.upper(), font=font)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+    except:
+        # Fallback for very old Pillow versions
+        text_w, text_h = draw.textsize(text.upper(), font=font)
+        
+    # Bottom center position (centered at 75% height)
+    x = (w - text_w) / 2
+    y = int(h * 0.75) - (text_h / 2)
+    
+    # Draw thick black outline (8 directions) for outstanding readability
+    outline_color = (0, 0, 0)
+    for dx, dy in [(-3, -3), (-3, 3), (3, -3), (3, 3), (-3, 0), (3, 0), (0, -3), (0, 3)]:
+        draw.text((x + dx, y + dy), text.upper(), font=font, fill=outline_color)
+        
+    # Draw vibrant high-retention yellow text
+    draw.text((x, y), text.upper(), font=font, fill=(255, 235, 59))
+    
+    return np.array(image)
+
+def overlay_subtitles_on_clip(clip, text):
+    """
+    Slices the scene's narration into chunks of ~3 words and renders them
+    synchronized across the duration of the clip.
+    """
+    duration = clip.duration
+    words = text.split()
+    if not words:
+        return clip
+        
+    # Calculate perfect chunking (usually 3-4 words per chunk is highly engaging)
+    words_per_chunk = 3
+    num_chunks = max(1, round(len(words) / words_per_chunk))
+    chunks = []
+    chunk_size = len(words) / num_chunks
+    
+    for i in range(num_chunks):
+        start = int(i * chunk_size)
+        end = int((i + 1) * chunk_size) if i < num_chunks - 1 else len(words)
+        chunks.append(" ".join(words[start:end]))
+        
+    chunk_duration = duration / len(chunks)
+    
+    def frame_filter(gf, t):
+        frame = gf(t)
+        chunk_idx = min(int(t / chunk_duration), len(chunks) - 1)
+        chunk_text = chunks[chunk_idx]
+        return draw_subtitle_on_frame(frame, chunk_text)
+        
+    return clip.fl(frame_filter)
+
 
 def create_ken_burns_clip(image_path: str, duration: float, target_size=(1080, 1920)) -> VideoFileClip:
     """
@@ -31,10 +119,10 @@ def create_ken_burns_clip(image_path: str, duration: float, target_size=(1080, 1
         
     return animated_clip
 
-def assemble_video(asset_paths: list, audio_paths: list, output_path: str, music_path: str = None) -> bool:
+def assemble_video(asset_paths: list, audio_paths: list, output_path: str, music_path: str = None, narrations: list = None) -> bool:
     """
     Takes a list of pre-downloaded video or image assets and a list of generated audio clips.
-    Mixes in background music if provided.
+    Mixes in background music and overlays high-retention captions if narrations are provided.
     """
     if len(asset_paths) != len(audio_paths):
         print("Error: The number of assets and audio clips must match.")
@@ -43,7 +131,7 @@ def assemble_video(asset_paths: list, audio_paths: list, output_path: str, music
     try:
         scene_clips = []
         
-        for asset_path, aud_path in zip(asset_paths, audio_paths):
+        for idx, (asset_path, aud_path) in enumerate(zip(asset_paths, audio_paths)):
             if not os.path.exists(asset_path) or not os.path.exists(aud_path):
                 print(f"Warning: Missing file {asset_path} or {aud_path}. Skipping scene.")
                 continue
@@ -73,7 +161,14 @@ def assemble_video(asset_paths: list, audio_paths: list, output_path: str, music
             
             # Set the audio
             scene_clip = scene_clip.set_audio(audio_clip)
+            
+            # Overlay subtitles if text is provided for this scene
+            if narrations and idx < len(narrations) and narrations[idx]:
+                print(f"     [VideoEditor] Overlaying high-retention subtitles for scene {idx+1}")
+                scene_clip = overlay_subtitles_on_clip(scene_clip, narrations[idx])
+                
             scene_clips.append(scene_clip)
+
             
         if not scene_clips:
             print("Error: No valid scenes could be assembled.")
