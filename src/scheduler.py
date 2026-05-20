@@ -22,8 +22,9 @@ def run_scheduler():
     print("YouTube Agent Scheduler initialized.")
     print("Optimal Shorts posting times (12:00 PM and 6:00 PM) have been loaded.")
     
-    # Schedule the jobs at Peak Optimal Times for YouTube Shorts
-    schedule.every().day.at("12:00").do(job)
+    # Schedule the jobs at Peak Optimal Times for YouTube Shorts (3x daily)
+    schedule.every().day.at("09:00").do(job)
+    schedule.every().day.at("13:00").do(job)
     schedule.every().day.at("18:00").do(job)
     
     print("Scheduler is actively running. Press Ctrl+C to stop.")

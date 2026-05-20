@@ -31,24 +31,28 @@ def generate_video_script(topic: str, feedback_context: str = "") -> dict:
     client = genai.Client(api_key=api_key)
     
     prompt = f"""
-    You are an elite, highly viral YouTube Shorts creator. Your task is to generate a fast-paced, highly engaging video script about: {topic}.
-    The video MUST strictly follow this Shorts retention architecture:
-    1. Scene 1 MUST be a powerful, disruptive "Hook" that immediately grabs attention.
-    2. Scenes 2-4 MUST build extreme value and keep the pace fast.
-    3. The final scene MUST contain a strong Call to Action.
+    You are an elite, highly viral YouTube Shorts creator specializing in Dark History and Unexplained Mysteries. Your task is to generate a fast-paced, highly engaging video script about: {topic}.
     
+    The video MUST strictly follow this high-retention storytelling architecture:
+    1. Scene 1 MUST be a powerful, disruptive "Hook" that immediately grabs attention (e.g., "What if I told you...", "The most terrifying event in history...").
+    2. Scenes 2-4 MUST build extreme suspense, opening curiosity loops, and keeping the pace very fast.
+    3. Scene 5 is the climax/reveal, delivering the payoff.
+    4. Scene 6 MUST contain a strong Call to Action (e.g., "Subscribe for more dark history").
+    
+    [CRITICAL PERFORMANCE FEEDBACK LOOP]
     {feedback_context}
+    You MUST actively analyze the view counts and engagement above. If a similar topic or style got low views, you MUST pivot the angle significantly to avoid repeating failure. If a topic got high views, double down on that exact pacing and hook style.
     
     The video should be under 60 seconds (about 120-140 words max total).
     
     Return the result strictly as a JSON object with the following schema:
     {{
       "title": "An engaging, clickbaity Title that builds curiosity",
-      "description": "A brief description with 3 relevant hashtags",
+      "description": "A brief description with 3 relevant hashtags (e.g., #DarkHistory #Mystery #Shorts)",
       "scenes": [
         {{
-          "narration": "The spoken voiceover text for this scene. Each scene narration MUST be 3 to 4 sentences (approx 35-45 words) to ensure the total video is 50-60 seconds long.",
-          "search_term": "A detailed, cinematic prompt for an AI image generator (e.g. 'cinematic close up of a robot working in a dark lab, 4k, realistic')"
+          "narration": "The spoken voiceover text for this scene. Each scene narration MUST be 2 to 3 sentences (approx 20-30 words) to ensure the total video is 50-60 seconds long. Use dramatic, suspenseful language.",
+          "search_term": "A detailed, cinematic prompt for a high-end AI image/video generator (e.g., 'Cinematic tracking shot of a foggy Victorian street at night, ominous lighting, 4k, photorealistic, highly detailed')"
         }}
       ]
     }}
@@ -58,11 +62,11 @@ def generate_video_script(topic: str, feedback_context: str = "") -> dict:
     
     try:
         response = client.models.generate_content(
-            model="gemini-flash-latest",
+            model="gemini-3.1-pro",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                temperature=0.8
+                temperature=0.9
             )
         )
         

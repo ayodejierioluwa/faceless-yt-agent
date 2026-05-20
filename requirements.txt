@@ -2,7 +2,6 @@ google-genai==1.73.1
 google-generativeai
 requests
 python-dotenv
-edge-tts
 moviepy==1.0.3
 Pillow
 google-auth-oauthlib

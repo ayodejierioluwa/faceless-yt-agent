@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from src.trends import get_trending_topic
 from src.script_writer import generate_video_script
-from src.media import generate_audio, fetch_pexels_video, generate_flux_image, fetch_background_music, generate_veo_video
+from src.media import generate_audio, fetch_background_music, generate_veo_video
 from src.video_editor import assemble_video
 from src.youtube_uploader import upload_video
 
@@ -60,33 +60,25 @@ def main():
         audio_path = os.path.join(output_dir, f"scene_{idx}_audio.mp3")
         a_success = generate_audio(narration, audio_path)
         
-        # Asset Selection (Veo -> Flux -> Pexels)
+        # Asset Selection: Strictly Google Veo / Omni Video Generation
         asset_path = None
         success = False
         
-        # 1. Try Google Veo (Premium AI Video Model)
-        if os.getenv("USE_VEO", "False").lower() == "true":
-            temp_path = os.path.join(output_dir, f"scene_{idx}_veo.mp4")
+        temp_path = os.path.join(output_dir, f"scene_{idx}_veo.mp4")
+        
+        # Retry mechanism for strict video generation to ensure we NEVER fall back to static images
+        for attempt in range(3):
             if generate_veo_video(prompt, temp_path):
                 asset_path = temp_path
                 success = True
-                print(f"     [Success] Google Veo Premium Video generated.")
-        
-        # 2. Try Flux (High Quality Cinematic Image Fallback)
+                print(f"     [Success] Google Omni Premium Video generated on attempt {attempt+1}.")
+                break
+            else:
+                print(f"     [Warning] Video generation failed on attempt {attempt+1}. Retrying in 10s...")
+                time.sleep(10)
+                
         if not success:
-            temp_path = os.path.join(output_dir, f"scene_{idx}_flux.jpg")
-            if generate_flux_image(prompt, temp_path):
-                asset_path = temp_path
-                success = True
-                print(f"     [Success] Flux Cinematic Image generated.")
-        
-        # 3. Try Pexels (Stock Video Fallback)
-        if not success:
-            temp_path = os.path.join(output_dir, f"scene_{idx}_pexels.mp4")
-            if fetch_pexels_video(prompt, temp_path):
-                asset_path = temp_path
-                success = True
-                print(f"     [Success] Pexels Stock Video fetched.")
+            print(f"     [Critical Error] Failed to generate True Video for scene {idx+1}. Agent cannot proceed without moving video.")
 
         
         if a_success and success:
